@@ -24,10 +24,7 @@ def retry(func):
                 result = func(*args, **kwargs)
             except (requests.ConnectionError, gaierror) as e:
                 error = e
-                logger.warning(
-                    "Connection Error, "
-                    f"retrying in {self.retry_delay} seconds"
-                )
+                logger.warning("Connection Error, " f"retrying in {self.retry_delay} seconds")
                 sleep(self.retry_delay)
                 continue
             else:
@@ -77,12 +74,14 @@ def documents_limited(n):
                 raise NoMatchingDataError
 
             df = pd.concat(frames, sort=True)
-            if func.__name__ != '_query_unavailability':
+            if func.__name__ != "_query_unavailability":
                 # For same indices pick last valid value
                 if df.index.has_duplicates:
                     df = df.groupby(df.index).agg(deduplicate_documents_limited)
             return df
+
         return documents_wrapper
+
     return decorator
 
 
@@ -100,21 +99,11 @@ def year_limited(func):
     @wraps(func)
     def year_wrapper(*args, start=None, end=None, **kwargs):
         if start is None or end is None:
-            raise Exception(
-                'Please specify the start and end date explicity with'
-                'start=<date> when calling this function'
-            )
-        if (
-            not isinstance(start, pd.Timestamp)
-            or not isinstance(end, pd.Timestamp)
-        ):
-            raise Exception(
-                'Please use a timezoned pandas object for start and end'
-            )
+            raise Exception("Please specify the start and end date explicity with" "start=<date> when calling this function")
+        if not isinstance(start, pd.Timestamp) or not isinstance(end, pd.Timestamp):
+            raise Exception("Please use a timezoned pandas object for start and end")
         if start.tzinfo is None or end.tzinfo is None:
-            raise Exception(
-                'Please use a timezoned pandas object for start and end'
-            )
+            raise Exception("Please use a timezoned pandas object for start and end")
 
         blocks = year_blocks(start, end)
         frames = []
@@ -122,7 +111,7 @@ def year_limited(func):
         for _start, _end in blocks:
             try:
                 frame = func(*args, start=_start, end=_end, **kwargs)
-                if func.__name__ != '_query_unavailability' and isinstance(frame.index, pd.DatetimeIndex):
+                if func.__name__ != "_query_unavailability" and isinstance(frame.index, pd.DatetimeIndex):
                     # Due to partial matching func may return data indexed by
                     # timestamps outside _start and _end. In order to avoid
                     # (unintentionally) repeating records, frames are truncated to
@@ -134,15 +123,10 @@ def year_limited(func):
                     if is_first_frame:
                         interval_mask = frame.index <= _end
                     else:
-                        interval_mask = (
-                            (frame.index <= _end)
-                            & (frame.index > _start)
-                        )
+                        interval_mask = (frame.index <= _end) & (frame.index > _start)
                     frame = frame.loc[interval_mask]
             except NoMatchingDataError:
-                logger.debug(
-                    f"NoMatchingDataError: between {_start} and {_end}"
-                )
+                logger.debug(f"NoMatchingDataError: between {_start} and {_end}")
                 frame = None
             frames.append(frame)
             is_first_frame = False
@@ -169,9 +153,7 @@ def day_limited(func):
             try:
                 frame = func(*args, start=_start, end=_end, **kwargs)
             except NoMatchingDataError:
-                logger.debug(
-                    f"NoMatchingDataError: between {_start} and {_end}"
-                )
+                logger.debug(f"NoMatchingDataError: between {_start} and {_end}")
                 frame = None
             frames.append(frame)
 
